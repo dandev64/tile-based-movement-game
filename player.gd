@@ -4,7 +4,7 @@ const tile_size: Vector2 = Vector2(32,32)
 var sprite_node_pos_tween: Tween #makes movement look smooth
 @export var walk_speed: float =0.185
 @export var sprint_speed: float=0.1 
-
+@onready var tile_map: TileMapLayer = $"../TileMapLayer"
 
 func _physics_process(delta: float) -> void:
 	if !sprite_node_pos_tween or !sprite_node_pos_tween.is_running():
@@ -32,7 +32,12 @@ func _physics_process(delta: float) -> void:
 			
 func update_facing_direction(dir: Vector2):
 	match dir:
+		Vector2.UP: $Sprite2D/PlayerAnimation.play("idle_up")
+		Vector2.DOWN: $Sprite2D/PlayerAnimation.play("idle_down")
+		Vector2.LEFT: $Sprite2D/PlayerAnimation.play("idle_left")
 		Vector2.RIGHT: $Sprite2D/PlayerAnimation.play("idle_right")
+		
+		
 		
 # Check collision based on direction
 func is_colliding_in_direction(dir: Vector2) -> bool:
@@ -60,3 +65,21 @@ func _move(dir: Vector2, duration: float):
 	sprite_node_pos_tween = create_tween()
 	sprite_node_pos_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
 	sprite_node_pos_tween.tween_property($Sprite2D, "global_position", global_position, duration).set_trans(Tween.TRANS_SINE)
+	
+	#sprite_node_pos_tween.finished.connect(is_ice.bind(dir)) #FOR ICE BUT UHHH
+	
+func is_ice(last_dir: Vector2): #Als for Ice 
+	var current_tile = tile_map.local_to_map(global_position)
+	
+	var data = tile_map.get_cell_tile_data(current_tile)
+	
+	if data: 
+		var tile_type = data.get_custom_data("special_tile")
+		
+		if tile_type == "ice":
+			if not is_colliding_in_direction(last_dir):
+				_move(last_dir, sprint_speed)
+			else: 
+				$Sprite2D/PlayerAnimation.stop(false)
+			
+		
