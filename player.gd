@@ -14,6 +14,12 @@ func _physics_process(_delta: float) -> void:
 		var is_sprinting = Input.is_action_pressed("sprint")
 		var current_speed = sprint_speed if is_sprinting else walk_speed
 		
+		
+		var tile_type = _get_tile_data_from_map("special_tile", tile_map)
+		if tile_type == "ice":
+			_water_slide()
+			return
+		
 		var input_dir = Vector2.ZERO
 		if Input.is_action_pressed("ui_up"): input_dir = Vector2.UP
 		elif Input.is_action_pressed("ui_down"): input_dir = Vector2.DOWN
@@ -29,6 +35,8 @@ func _physics_process(_delta: float) -> void:
 				play_animation("idle_", input_dir)
 		else:
 			play_animation("idle_", last_direction)
+			
+		_water_slide()
 
 func get_dir(dir: Vector2) -> String:
 	if dir == Vector2.UP: return "up"
@@ -51,3 +59,17 @@ func _move(dir: Vector2, duration: float):
 	sprite_node_pos_tween = create_tween()
 	sprite_node_pos_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
 	sprite_node_pos_tween.tween_property($Sprite2D, "global_position", global_position, duration).set_trans(Tween.TRANS_SINE)
+
+
+func _get_tile_data_from_map(custom_data_name: StringName, tilemap: TileMapLayer) -> Variant:
+	var local_pos = tilemap.to_local(global_position)
+	var cell = tilemap.local_to_map(local_pos)
+	var data = tilemap.get_cell_tile_data(cell)
+	if data:
+		return data.get_custom_data(custom_data_name)
+	return null
+	
+func _water_slide():
+	if _get_tile_data_from_map("special_tile", $"../TileMapLayer") == "ice":
+		if not is_colliding_in_direction(last_direction):
+			_move(last_direction, walk_speed)
